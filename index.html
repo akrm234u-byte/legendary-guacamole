@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MANDO</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:#10131a;color:#fff;min-height:100vh}
+.wrap{max-width:520px;margin:auto;padding:24px 16px}.logo{font-size:52px;text-align:center}.title{text-align:center;font-size:32px;margin:8px 0}.sub{text-align:center;color:#b8becb;margin-bottom:24px}
+.card{background:#1a1f29;border:1px solid #303744;border-radius:20px;padding:18px;margin:12px 0}
+button{width:100%;border:1px solid #3a4352;background:#242b37;color:#fff;border-radius:15px;padding:16px;margin:6px 0;font-size:17px;cursor:pointer}
+button:active{transform:scale(.99)}.level{display:flex;gap:12px;align-items:center;text-align:right}.emoji{font-size:30px}
+.hidden{display:none}.top{display:flex;justify-content:space-between;color:#c4cad4;margin-bottom:14px}
+.q{font-size:23px;line-height:1.5;margin:18px 0}.answer.correct{border-color:#4caf50}.answer.wrong{border-color:#e05b5b}
+.feedback{min-height:28px;text-align:center;font-weight:bold;margin:10px 0}.score{text-align:center;font-size:18px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div id="home">
+    <div class="logo">🧠</div>
+    <div class="title">MANDO</div>
+    <div class="sub">اختار الصعوبة وابدأ التحدي مع MANDO</div>
+    <div class="card">
+      <button data-level="easy"><div class="level"><span class="emoji">🟢</span><span><b>سهل</b><br><small>10 نقاط لكل إجابة صحيحة</small></span></div></button>
+      <button data-level="medium"><div class="level"><span class="emoji">🟡</span><span><b>متوسط</b><br><small>20 نقطة لكل إجابة صحيحة</small></span></div></button>
+      <button data-level="hard"><div class="level"><span class="emoji">🔴</span><span><b>صعب</b><br><small>30 نقطة لكل إجابة صحيحة</small></span></div></button>
+    </div>
+  </div>
+
+  <div id="quiz" class="hidden">
+    <div class="top"><button id="back" style="width:auto;padding:9px 14px;margin:0">← القائمة</button><span>النقاط: <b id="score">0</b></span></div>
+    <div class="card">
+      <div id="progress"></div>
+      <div id="question" class="q"></div>
+      <div id="answers"></div>
+      <div id="feedback" class="feedback"></div>
+      <button id="next" class="hidden">اللغز التالي</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const data={
+easy:[
+["شيء له أسنان ولا يعض، ما هو؟",["المشط","الباب","الكتاب"],0],
+["ما الشيء الذي يمشي بلا أرجل؟",["الوقت","الكرسي","الحائط"],0],
+["له عين ولا يرى، ما هو؟",["الإبرة","القلم","المفتاح"],0],
+["شيء نراه ولا نستطيع لمسه، ما هو؟",["الظل","الحجر","الطاولة"],0],
+["ما الذي له أوراق وليس شجرة؟",["الكتاب","الباب","الحذاء"],0]
+],
+medium:[
+["شيء كلما أخذت منه كبر، ما هو؟",["الحفرة","المال","العمر"],0],
+["ما الذي يكتب ولا يقرأ؟",["القلم","الكتاب","الهاتف"],0],
+["له مفاتيح ولا يفتح أبواباً، ما هو؟",["البيانو","الخزانة","السيارة"],0],
+["ما الذي إذا زاد نقص؟",["العمر","المال","الطول"],0],
+["شيء إذا وضعته في الثلاجة لا يبرد، ما هو؟",["الفلفل الحار","الماء","الثلج"],0]
+],
+hard:[
+["ما الشيء الذي إذا نطقت اسمه كسرته؟",["الصمت","الزجاج","الوعد"],0],
+["شيء يوجد في القرن مرة وفي الدقيقة مرتين ولا يوجد في الساعة، ما هو؟",["حرف القاف","حرف الدال","حرف الميم"],0],
+["رجل خرج تحت المطر ولم يبتل شعره، لماذا؟",["لأنه أصلع","كان داخل سيارة","المطر توقف"],0],
+["ما الشيء الذي كلما مشى فقد جزءاً من ذيله؟",["إبرة الخياطة","القلم","الطائر"],0],
+["ما الذي تستطيع كسره دون أن تلمسه؟",["الوعد","الحجر","الباب"],0]
+]};
+let level="",i=0,score=0,locked=false;
+const home=document.querySelector("#home"),quiz=document.querySelector("#quiz"),q=document.querySelector("#question"),answers=document.querySelector("#answers"),feedback=document.querySelector("#feedback"),next=document.querySelector("#next"),scoreEl=document.querySelector("#score"),progress=document.querySelector("#progress");
+
+function render(){
+ const d=data[level][i]; locked=false;
+ progress.textContent=`السؤال ${i+1} من ${data[level].length}`;
+ q.textContent=d[0]; answers.innerHTML=""; feedback.textContent=""; next.classList.add("hidden");
+ d[1].forEach((text,j)=>{
+   const b=document.createElement("button"); b.className="answer"; b.textContent=text;
+   b.onclick=()=>answer(j,b); answers.appendChild(b);
+ });
+}
+function answer(j,b){
+ if(locked)return; locked=true;
+ const d=data[level][i], ok=j===d[2];
+ if(ok){score += level==="easy"?10:level==="medium"?20:30; scoreEl.textContent=score; feedback.textContent="✅ إجابة صحيحة!"; b.classList.add("correct")}
+ else {feedback.textContent="❌ إجابة خاطئة!"; b.classList.add("wrong"); answers.children[d[2]].classList.add("correct")}
+ [...answers.children].forEach(x=>x.disabled=true);
+ next.textContent=i===data[level].length-1?"النتيجة":"اللغز التالي";
+ next.classList.remove("hidden");
+}
+document.querySelectorAll("[data-level]").forEach(b=>b.onclick=()=>{
+ level=b.dataset.level;i=0;score=0;scoreEl.textContent=0;home.classList.add("hidden");quiz.classList.remove("hidden");render();
+});
+next.onclick=()=>{
+ if(i<data[level].length-1){i++;render();}
+ else{
+   q.textContent="🎉 مبروك! خلصت المستوى";
+   progress.textContent=`نتيجتك: ${score} نقطة`;
+   answers.innerHTML="";
+   feedback.textContent="اختر مستوى آخر للعب من جديد.";
+   next.textContent="العودة للقائمة";
+   next.onclick=()=>{quiz.classList.add("hidden");home.classList.remove("hidden");};
+ }
+};
+document.querySelector("#back").onclick=()=>{quiz.classList.add("hidden");home.classList.remove("hidden");};
+</script>
+</body>
+</html>
